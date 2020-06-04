@@ -40,7 +40,7 @@ class RedisCLusterCreate(object):
     def create(self, *nodes):
         """ create redis cluster
         """
-        print(nodes)
+        print('create', nodes)
 
 
 class RedisCLusterExtend(object):
@@ -115,10 +115,17 @@ def useage():
     parser.add_argument('action', help=f'action, eg: {ActionEnum.to_string()}', choices=ActionEnum.to_list())
     parser.add_argument('nodes', help='redis node address', nargs='+')
     parser.add_argument('-c', '--cluster', help='existed redis cluster address')
-    parser.add_argument('-a', '--add', help='add a new redis node')
-    parser.add_argument('-d', '--delete', help='delete a redis node')
+    parser.add_argument('-a', '--add', help='add a new redis node', nargs='?')
+    parser.add_argument('-d', '--delete', help='delete a redis node', nargs='?')
 
     return parser
+
+
+def check_args(args):
+    create_condition = args.action == ActionEnum.create
+    extend_condition = args.action == ActionEnum.extend and args.a
+    shrink_condition = args.action == ActionEnum.shrink and args.d
+    return create_condition | extend_condition | shrink_condition
 
 
 def main():
@@ -129,15 +136,17 @@ def main():
     args = parser.parse_args()
     # print(args)
     # print(args.nodes)
+    if check_args(args):
+        return parser.print_help()
 
     action = args.action
     nodes = args.nodes
-    cluster = args.cluster
-    add_node = args.add
-    del_node = args.delete
+    exist_random_node = args.cluster
+    add_nodes = args.add
+    del_nodes = args.delete
 
     dispatcher = RedisCLusterActionDispatcher()
-    dispatcher.dispatch(action, *nodes)
+    dispatcher.dispatch(action, *nodes, exist_random_node=exist_random_node, add_nodes=add_nodes, del_nodes=del_nodes)
 
 
 if __name__ == '__main__':
