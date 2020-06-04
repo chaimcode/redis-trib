@@ -26,7 +26,7 @@ def dispatcher(func):
 
     @wraps(func)
     def wrapper(*args, **kw):
-        return __dispatcher.dispatch(args[1].__class__)(*args, **kw)
+        return __dispatcher.dispatch(args[-1].__class__)(*args, **kw)
 
     wrapper.register = __dispatcher.register
     return wrapper
@@ -34,7 +34,7 @@ def dispatcher(func):
 
 class RedisCLusterCreate(object):
 
-    def __init__(self, *nodes):
+    def __init__(self, nodes, **kw):
         self.create(*nodes)
 
     def create(self, *nodes):
@@ -44,7 +44,7 @@ class RedisCLusterCreate(object):
 
 
 class RedisCLusterExtend(object):
-    def __init__(self, exist_random_node, *add_nodes):
+    def __init__(self, exist_random_node, add_nodes, **kw):
         self.execute(exist_random_node, *add_nodes)
 
     def extend(self, exist_random_node, *add_nodes):
@@ -54,7 +54,7 @@ class RedisCLusterExtend(object):
 
 
 class RedisCLusterShrink(object):
-    def __init__(self, exist_random_node, *delete_nodes):
+    def __init__(self, exist_random_node, delete_nodes, **kw):
         self.shrink(exist_random_node, *delete_nodes)
 
     def shrin(self, exist_random_node, *delete_nodes):
@@ -65,10 +65,10 @@ class RedisCLusterShrink(object):
 
 class RedisCLusterActionDispatcher(object):
     @dispatcher
-    def dispatch(self, action, *args, **kwargs):
+    def dispatch(self, action, **kwargs):
         cls_name = self.get_cls_name(action)
         cls_ = self.get_cls(cls_name)
-        cls_(*args, **kwargs)
+        cls_(**kwargs)
 
     def get_cls(self, cls_name):
         cls_ = getattr(sys.modules[__name__], cls_name)
@@ -131,12 +131,10 @@ def check_args(args):
 def main():
     parser = useage()
 
-    # parser.print_help()
-
     args = parser.parse_args()
-    # print(args)
-    # print(args.nodes)
-    if check_args(args):
+
+    if not check_args(args):
+        print(f'error use for {args.action} redis. look follow\n')
         return parser.print_help()
 
     action = args.action
@@ -146,7 +144,7 @@ def main():
     del_nodes = args.delete
 
     dispatcher = RedisCLusterActionDispatcher()
-    dispatcher.dispatch(action, *nodes, exist_random_node=exist_random_node, add_nodes=add_nodes, del_nodes=del_nodes)
+    dispatcher.dispatch(**vars(args))
 
 
 if __name__ == '__main__':
